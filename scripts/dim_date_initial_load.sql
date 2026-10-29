@@ -57,7 +57,7 @@ CREATE TABLE #dim_date
     persian_week_day_name        NVARCHAR(9)   NULL,
     persian_day_lag              INT           NULL,   -- update
     is_holiday                   BIT           NULL,
-    holiday_name                 NVARCHAR(50)  NULL
+    holiday_description                 NVARCHAR(200)  NULL
 );
 GO
 
@@ -110,7 +110,7 @@ INSERT INTO #dim_date
     persian_week_day_name,
     persian_day_lag,
     is_holiday,
-    holiday_name
+    holiday_description
 )
 VALUES
 (
@@ -156,7 +156,7 @@ VALUES
     NULL,   -- persian_week_day_name
     NULL,   -- persian_day_lag
     0,      -- is_holiday
-    NULL    -- holiday_name
+    NULL    -- holiday_description
 );
 GO
 
@@ -233,7 +233,7 @@ INSERT INTO #dim_date
     persian_week_day_name,
     persian_day_lag, -- update
     is_holiday,
-    holiday_name
+    holiday_description
 )
 SELECT
     -- key
@@ -330,7 +330,7 @@ SELECT
     END AS persian_week_day_name,
     NULL AS persian_day_lag, -- update
     0 AS is_holiday, -- update
-    NULL AS holiday_name -- update
+    NULL AS holiday_description -- update
 FROM #dates AS d;
 GO
 
@@ -488,7 +488,7 @@ CREATE TABLE [temporary].[general].[dim_date] -- ← change to your database
 
     -- Holiday
     is_holiday                   BIT           NULL,
-    holiday_name                 NVARCHAR(50)  NULL,
+    holiday_description                 NVARCHAR(200)  NULL,
 
     --Standard Columns
     created_at  DATETIME2(3)  NULL
@@ -535,7 +535,7 @@ INSERT INTO [general].[dim_date]
     persian_week_day_name,
     persian_day_lag,
     is_holiday,
-    holiday_name
+    holiday_description
 )
 SELECT
     date_key,
@@ -565,7 +565,7 @@ SELECT
     persian_week_day_name,
     persian_day_lag,
     is_holiday,
-    holiday_name
+    holiday_description
 FROM #dim_date
 ORDER BY gregorian_date;
 

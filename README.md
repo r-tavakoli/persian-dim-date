@@ -4,9 +4,8 @@
 ![Language](https://img.shields.io/badge/Language-T--SQL-CC2927)
 ![Calendar](https://img.shields.io/badge/calendar-Persian%20%28Jalali%29-9cf)
 ![Range](https://img.shields.io/badge/range-1395--1415-informational)
-![Refresh](https://img.shields.io/badge/refresh-daily-success)
 
-A complete Persian (Jalali) calendar date dimension for SQL Server data warehouses. Covers **1395/01/01 → 1415/12/29** (Gregorian 2016-03-20 → 2037-03-19), exposes every Persian calendar attribute you'd need for reporting, and includes **relative lag columns** that are refreshed daily against `GETDATE()` so analysts can write queries like *"this month vs. last month"* without any date math.
+A complete Persian (Jalali) calendar date dimension for SQL Server data warehouses. Covers **1395/01/01 → 1415/12/29** (Gregorian 2016-03-20 → 2037-03-19), exposes every Persian calendar attribute you'd need for reporting, includes **relative lag columns** refreshed daily against `GETDATE()`, and is **populated with real Iranian holidays** sourced from `holidayapi.ir`.
 
 ## 📆 Changing the Date Range
 
@@ -80,7 +79,7 @@ DECLARE @ToDate   DATETIME = '2037-03-19'; -- 1415/12/29
 | `persian_day_of_month_id` | `SMALLINT` | 1–31 |
 | `persian_day_of_week_id` | `SMALLINT` | 1 = Saturday, 7 = Friday |
 | `persian_week_day_name` | `NVARCHAR(9)` | شنبه … جمعه |
-| `is_holiday` / `holiday_name` | `BIT` / `NVARCHAR(50)` | Placeholder for holiday logic (default `0` / `NULL`) |
+| `is_holiday` / `holiday_description` | `BIT` / `NVARCHAR(50)` | Placeholder for holiday logic (default `0` / `NULL`) |
 
 ### Lag Columns (Refreshed Daily)
 
@@ -104,7 +103,58 @@ The sentinel row (`date_key = -1`) has `NULL` lags — it never matches a real d
 | `created_at` | `DATETIME2(3)` | `SYSDATETIME()` |
 | `modified_at` | `DATETIME2(3)` | `SYSDATETIME()` — updated by the daily refresh |
 
----
+
+## 📆 Holiday Population (`is_holiday`, `holiday_description`)
+
+Holidays are loaded from **`holidayapi.ir`**, a per-day Gregorian endpoint:
+GET https://holidayapi.ir/gregorian/{year}/{month}/{day}
+
+Example response for `2026-03-21`:
+
+```json
+{
+  "is_holiday": true,
+  "events": [
+    { "description": "جشن نوروز/جشن سال نو", "is_holiday": true },
+    { "description": "عید سعید فطر", "is_holiday": true },
+    { "description": "روز جهانی شعر", "is_holiday": false },
+    { "description": "روز جهانی نوروز", "is_holiday": false }
+  ]
+}
+```
+
+### Filtering Rules
+
+#### Rule 1 — Top-Level Holiday Flag
+Top-level `is_holiday` must be `true` — otherwise the day is **skipped entirely**.
+
+#### Rule 2 — Event-Level Holiday Flag
+Only events with `event.is_holiday == true` are collected.
+
+> Events like **روز جهانی شعر** (`is_holiday: false`) are commemorations, not days off, so they're **excluded**.
+
+#### Rule 3 — Drop the Friday Marker `جمعه`
+
+The API marks **every Friday** as `is_holiday: true` with description `جمعه`. Since Friday is a weekly weekend, not a holiday, it's filtered out:
+
+- **Plain Friday** (only `جمعه`) → skipped entirely.
+- **Friday that is also a real holiday** (e.g., Eid on a Friday) → `جمعه` is dropped, the **real holiday name is kept**.
+
+This means `is_holiday = 1` in `dim_date` marks **official public holidays only**, not weekends. `is_weekend` already covers **Thu/Fri**.
+
+## Loading Holidays
+
+```bash
+# Fetch holidays (first run: ~20 min, ~4,000 API calls, throttled + cached)
+python generate_holiday_updates.py
+```
+
+> **Re-runs are instant** — the script reads from `cache_gregorian/*.json` and only fetches missing days. Use `--start` / `--end` to load a narrower range:
+
+```bash
+python generate_holiday_updates.py --start 2026-01-01 --end 2026-12-31
+```
+
 
 ## 🚀 Deployment Order
 

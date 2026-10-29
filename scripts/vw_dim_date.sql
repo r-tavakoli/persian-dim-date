@@ -211,10 +211,10 @@ SELECT
         WHEN persian_day_lag BETWEEN -365 AND 0        THEN N'یک سال (365 روز) گذشته'
         WHEN persian_day_lag <  -365                   THEN N'بیش از یک سال گذشته'
         ELSE N'نامشخص'
-    END AS day_range_label
+    END AS day_range_label,
 
     -- Holiday
-    -- is_holiday,
-    -- holiday_name
+    is_holiday,
+    holiday_description
 FROM [temporary].[general].[dim_date]; -- ← change to your database
 GO

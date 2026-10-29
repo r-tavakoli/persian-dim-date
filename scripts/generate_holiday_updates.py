@@ -71,7 +71,7 @@ def is_true(value) -> bool:
 def collect_range(start: date, end: date, debug_all: bool = False) -> dict[str, list[str]]:
     """
     Walk every day between start and end inclusive.
-    Return { gregorian_date_iso: [holiday_name, ...] }
+    Return { gregorian_date_iso: [holiday_description, ...] }
     ONLY for days with a real holiday reason (not just Friday).
     """
     if debug_all:
@@ -181,10 +181,10 @@ def generate_sql(holidays: dict[str, list[str]]) -> str:
         lines.append(
             f"UPDATE {TABLE}\n"
             f"SET is_holiday = 1,\n"
-            f"    holiday_name = {holiday_literal}\n"
+            f"    holiday_description = {holiday_literal}\n"
             f"WHERE gregorian_date = '{date_str}'\n"
             f"  AND (is_holiday IS NULL OR is_holiday <> 1\n"
-            f"       OR ISNULL(holiday_name, N'') <> {compare_literal});"
+            f"       OR ISNULL(holiday_description, N'') <> {compare_literal});"
         )
         lines.append("")
 
